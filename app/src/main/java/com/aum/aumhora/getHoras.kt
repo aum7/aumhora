@@ -26,15 +26,20 @@ fun generateSubhoras(
     val startDate = sdf.parse(hora.start)!!
     val endDate = sdf.parse(hora.end)!!
     val duration = endDate.time - startDate.time
-    val subDuration = duration / 7
+    val subDuration = duration / 15
 
     val baseIndex = rulers.indexOf(hora.ruler)
     val list = mutableListOf<SubHora>()
-    for (i in 0 until 7) {
-        val s = Date(startDate.time + 1 * subDuration)
+    for (i in 0 until 15) {
+        val s = Date(startDate.time + i * subDuration)
         val e = Date(startDate.time + (i + 1) * subDuration)
         val r = rulers[(baseIndex + i) % 7]
-        list.add(SubHora(sdf.format(s), sdf.format(e), r))
+        list.add(
+            SubHora(
+                sdf.format(s), sdf.format(e),
+                r
+            )
+        )
     }
     return list
 }
@@ -44,19 +49,19 @@ fun getHoras(
     selectedDate: String
 ): List<Hora> {
     // load json
-    var dataArray = json["data"]!!.jsonArray
+    val dataArray = json["data"]!!.jsonArray
     // find date
     var sunriseStr = ""
     var sunsetStr = ""
     var nextSunriseStr = ""
-    var weekday = ""
+//    var weekday = ""
     for (i in dataArray.indices) {
         val obj = dataArray[i].jsonObject
         val date = obj["date"]!!.jsonPrimitive.content
         if (date == selectedDate) {
             sunriseStr = obj["sunrise"]!!.jsonPrimitive.content
             sunsetStr = obj["sunset"]!!.jsonPrimitive.content
-            weekday = obj["weekday"]!!.jsonPrimitive.content
+//            weekday = obj["weekday"]!!.jsonPrimitive.content
             if (i + 1 < dataArray.size) {
                 nextSunriseStr = dataArray[i + 1].jsonObject["sunrise"]!!.jsonPrimitive.content
             }
@@ -75,7 +80,15 @@ fun getHoras(
         if (nextSunrise.time <= sunset.time) nextSunrise.time + 24 * 3600_000 else nextSunrise.time
     val nightDuration = nextSunriseMillis - sunset.time
     // hora rulers
-    var rulers = listOf("su", "mo", "ma", "me", "ju", "ve", "sa")
+    val rulers = listOf("su", "ve", "me", "mo", "sa", "ju", "ma")
+//    val horaList = mutableListOf<Hora>()
+    // find 1st ruler of the day
+    val weekday =
+        dataArray.first {
+            it.jsonObject["date"]!!
+                .jsonPrimitive.content == selectedDate
+        }
+            .jsonObject["weekday"]!!.jsonPrimitive.content.lowercase()
     val weekdayRulerMap = mapOf(
         "sun" to "su",
         "mon" to "mo",
@@ -89,36 +102,48 @@ fun getHoras(
     val horaList = mutableListOf<Hora>()
     // calculate day horas
     for (i in 0 until 12) {
-        val startTime = Date(sunrise.time + i * dayDuration / 12)
-        val endTime = Date(sunrise.time + (i + 1) * dayDuration / 12)
-        val rulerIndex = (rulers.indexOf(firstRuler) + i) % 7
+        val startTime = Date(
+            sunrise.time + i * dayDuration / 12
+        )
+        val endTime = Date(
+            sunrise.time + (i + 1) * dayDuration / 12
+        )
+        val rulerIndex = (
+                rulers.indexOf(firstRuler) + i) % 7
+        val hora = Hora(
+            sdf.format(startTime),
+            sdf.format(endTime),
+            rulers[rulerIndex]
+        )
         horaList.add(
-            Hora(
-                sdf.format(startTime),
-                sdf.format(endTime),
-                rulers[rulerIndex]
+            hora.copy(
+                subhoras = generateSubhoras(
+                    hora, sdf, rulers
+                )
             )
         )
     }
     // night horas
-    val firstNightRulerIndex = (rulers.indexOf(firstRuler) + 12) % 7
+    val firstNightRulerIndex = (
+            rulers.indexOf(firstRuler) + 12) % 7
     for (i in 0 until 12) {
-        val startTime = Date(sunset.time + i * nightDuration / 12)
-        val endTime = Date(sunset.time + (i + 1) * nightDuration / 12)
-        val rulerIndex = (firstNightRulerIndex + i) % 7
+        val startTime = Date(
+            sunset.time + i * nightDuration / 12
+        )
+        val endTime = Date(
+            sunset.time + (i + 1) * nightDuration / 12
+        )
+        val rulerIndex = (
+                firstNightRulerIndex + i) % 7
+        val hora = Hora(
+            sdf.format(startTime),
+            sdf.format(endTime),
+            rulers[rulerIndex]
+        )
         horaList.add(
-            Hora(
-                sdf.format(startTime),
-                sdf.format(endTime),
-                rulers[rulerIndex]
-            ).copy(
+            hora.copy(
                 subhoras = generateSubhoras(
-                    Hora(
-                        sdf.format(startTime),
-                        sdf.format(endTime),
-                        rulers[rulerIndex]
-                    ),
-                    sdf,
+                    hora, sdf,
                     rulers
                 )
             )
