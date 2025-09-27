@@ -4,6 +4,7 @@ import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlinx.serialization.json.*
 
 //import android.content.Context
 //import android.os.Bundle
@@ -18,25 +19,25 @@ data class Hora(
 )
 
 fun getHoras(
-    json: JSONObject,
+    json: JsonObject,
     selectedDate: String
 ): List<Hora> {
     // load json
-    var dataArray = json.getJSONArray("data")
+    var dataArray = json["data"]!!.jsonArray
     // find date
     var sunriseStr = ""
     var sunsetStr = ""
     var nextSunriseStr = ""
     var weekday = ""
-    for (i in 0 until dataArray.length()) {
-        val obj = dataArray.getJSONObject(i)
-        val date = obj.getString("date")
+    for (i in dataArray.indices) {
+        val obj = dataArray[i].jsonObject
+        val date = obj["date"]!!.jsonPrimitive.content
         if (date == selectedDate) {
-            sunriseStr = obj.getString("sunrise")
-            sunsetStr = obj.getString("sunset")
-            weekday = obj.getString("weekday")
-            if (i + 1 < dataArray.length()) {
-                nextSunriseStr = dataArray.getJSONObject(i + 1).getString("sunrise")
+            sunriseStr = obj["sunrise"]!!.jsonPrimitive.content
+            sunsetStr = obj["sunset"]!!.jsonPrimitive.content
+            weekday = obj["weekday"]!!.jsonPrimitive.content
+            if (i + 1 < dataArray.size) {
+                nextSunriseStr = dataArray[i + 1].jsonObject["sunrise"]!!.jsonPrimitive.content
             }
             break
         }
@@ -94,9 +95,11 @@ fun getHoras(
 }
 
 fun main() {
-    val input = context.assets.open("slo_ljubljana_2025.json")
-    val jsonString = input.bufferReader().use { it.readText() }
-    val json = JSONObject(jsonString)
+    val file = File("slo_ljubljana_2025.json")
+    val jsonString = file.readText()
+    val json = Json.parseToJsonElement(jsonString).jsonObject
+    val city = json["city"]?.jsonPrimitive?.content
+    println(city)
     val selectedDate = "2025-01-01"
     val horas = getHoras(json, selectedDate)
     println("horas for $selectedDate : ")
@@ -104,35 +107,3 @@ fun main() {
         println("${i + 1} : ${h.start} - ${h.end}  ${h.ruler}")
     }
 }
-
-//    val dataArray = json.getJSONArray("data")
-//    var sunriseStr = ""
-//    var sunsetStr = ""
-//    var nextSunriseStr = ""
-//    var weekday = ""
-//    for (i in 0 until dataArray.length()) {
-//        val obj = dataArray.getJSONObject(i)
-//        if (obj.getString("date") == selectedDate) {
-//            sunriseStr = obj.getString("sunrise")
-//            sunsetStr = obj.getString("sunset")
-//            weekday = obj.getString("weekday")
-//            if (i + 1 < dataArray.length()) {
-//                nextSunriseStr = dataArray.getJSONObject(i + 1).getString("sunrise")
-//            }
-//            break
-//        }
-//    }
-//    val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-//    val sunrise = sdf.parse(sunriseStr)!!
-//    val sunset = sdf.parse(sunsetStr)!!
-//    val nextSunrise = sdf.parse(nextSunriseStr)!!
-//
-//    val dayDuration = sunset.time - sunrise.time
-//    val nightDuration = nextSunrise.time - sunset.time
-//
-//    println("day duration : ${dayDuration / 60000} min")
-//    println("night duration : ${nightDuration / 60000} min")
-//    println("horas for $selectedDate :")
-//    for ((i, h) in horas.withIndex()) {
-//        println("${i + 1} : ${h.start} - ${h.end} ${h.ruler}")
-//    }
