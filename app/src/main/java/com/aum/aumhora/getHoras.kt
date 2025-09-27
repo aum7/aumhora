@@ -1,16 +1,9 @@
 package com.aum.aumhora
 
-import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.serialization.json.*
-
-//import android.content.Context
-//import android.os.Bundle
-//import android.util.Log
-//import androidx.appcompat.app.AppCompatActivity
-//import java.io.InputStream
 
 data class Hora(
     val start: String,
@@ -50,7 +43,9 @@ fun getHoras(
     val nextSunrise = sdf.parse(nextSunriseStr)!!
     // calculate day / night duration in millis
     val dayDuration = sunset.time - sunrise.time
-    val nightDuration = nextSunrise.time - sunset.time
+    val nextSunriseMillis =
+        if (nextSunrise.time <= sunset.time) nextSunrise.time + 24 * 3600_000 else nextSunrise.time
+    val nightDuration = nextSunriseMillis - sunset.time
     // hora rulers
     var rulers = listOf("su", "mo", "ma", "me", "ju", "ve", "sa")
     val weekdayRulerMap = mapOf(
@@ -68,7 +63,7 @@ fun getHoras(
     for (i in 0 until 12) {
         val startTime = Date(sunrise.time + i * dayDuration / 12)
         val endTime = Date(sunrise.time + (i + 1) * dayDuration / 12)
-        val rulerIndex = (rulers.indexOf(firstRuler) + 1) % 7
+        val rulerIndex = (rulers.indexOf(firstRuler) + i) % 7
         horaList.add(
             Hora(
                 sdf.format(startTime),
@@ -99,10 +94,14 @@ fun main() {
     val jsonString = file.readText()
     val json = Json.parseToJsonElement(jsonString).jsonObject
     val city = json["city"]?.jsonPrimitive?.content
-    println(city)
+    println("city : $city")
     val selectedDate = "2025-01-01"
     val horas = getHoras(json, selectedDate)
-    println("horas for $selectedDate : ")
+    // get weekday
+    val dataArray = json["data"]!!.jsonArray
+    val weekday =
+        dataArray.first { it.jsonObject["date"]!!.jsonPrimitive.content == selectedDate }.jsonObject["weekday"]!!.jsonPrimitive.content.lowercase()
+    println("horas for $weekday | $selectedDate : ")
     for ((i, h) in horas.withIndex()) {
         println("${i + 1} : ${h.start} - ${h.end}  ${h.ruler}")
     }
