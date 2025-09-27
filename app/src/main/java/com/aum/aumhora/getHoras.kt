@@ -8,8 +8,36 @@ import kotlinx.serialization.json.*
 data class Hora(
     val start: String,
     val end: String,
+    val ruler: String,
+    val subhoras: List<SubHora> = emptyList()
+)
+
+data class SubHora(
+    val start: String,
+    val end: String,
     val ruler: String
 )
+
+fun generateSubhoras(
+    hora: Hora,
+    sdf: SimpleDateFormat,
+    rulers: List<String>
+): List<SubHora> {
+    val startDate = sdf.parse(hora.start)!!
+    val endDate = sdf.parse(hora.end)!!
+    val duration = endDate.time - startDate.time
+    val subDuration = duration / 7
+
+    val baseIndex = rulers.indexOf(hora.ruler)
+    val list = mutableListOf<SubHora>()
+    for (i in 0 until 7) {
+        val s = Date(startDate.time + 1 * subDuration)
+        val e = Date(startDate.time + (i + 1) * subDuration)
+        val r = rulers[(baseIndex + i) % 7]
+        list.add(SubHora(sdf.format(s), sdf.format(e), r))
+    }
+    return list
+}
 
 fun getHoras(
     json: JsonObject,
@@ -83,6 +111,16 @@ fun getHoras(
                 sdf.format(startTime),
                 sdf.format(endTime),
                 rulers[rulerIndex]
+            ).copy(
+                subhoras = generateSubhoras(
+                    Hora(
+                        sdf.format(startTime),
+                        sdf.format(endTime),
+                        rulers[rulerIndex]
+                    ),
+                    sdf,
+                    rulers
+                )
             )
         )
     }
@@ -104,5 +142,8 @@ fun main() {
     println("horas for $weekday | $selectedDate : ")
     for ((i, h) in horas.withIndex()) {
         println("${i + 1} : ${h.start} - ${h.end}  ${h.ruler}")
+        for ((j, sh) in h.subhoras.withIndex()) {
+            println("   ${i + 1}.${j + 1} : ${sh.start} - ${sh.end}  ${sh.ruler}")
+        }
     }
 }
