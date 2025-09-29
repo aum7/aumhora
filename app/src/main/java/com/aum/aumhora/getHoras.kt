@@ -1,3 +1,4 @@
+// getHoras.kt
 package com.aum.aumhora
 
 import java.io.File
@@ -81,7 +82,6 @@ fun getHoras(
     val nightDuration = nextSunriseMillis - sunset.time
     // hora rulers
     val rulers = listOf("su", "ve", "me", "mo", "sa", "ju", "ma")
-//    val horaList = mutableListOf<Hora>()
     // find 1st ruler of the day
     val weekday =
         dataArray.first {
@@ -149,6 +149,7 @@ fun getHoras(
             )
         )
     }
+//    println("gethoras : horalist : $horaList")
     return horaList
 }
 
