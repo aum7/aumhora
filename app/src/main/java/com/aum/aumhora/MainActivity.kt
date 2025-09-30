@@ -31,6 +31,7 @@ import com.aum.aumhora.ui.theme.AumhoraTheme
 import com.aum.aumhora.ui.theme.SettingsPanel
 import com.aum.aumhora.ui.theme.horaColors
 import com.aum.aumhora.ui.theme.defaultHoraColor
+import kotlinx.serialization.json.jsonPrimitive
 
 
 class MainActivity : ComponentActivity() {
@@ -46,10 +47,10 @@ class MainActivity : ComponentActivity() {
                 val selectedDate = remember { mutableStateOf(Calendar.getInstance()) }
                 // parsed json object from the file
                 var jsonObject by remember { mutableStateOf<JsonObject?>(null) }
+                var cityName by remember { mutableStateOf<String?>(null) }
                 // calculated horas
                 var horasList by remember { mutableStateOf<List<Hora>>(emptyList()) }
                 // toggle settings panel
-//                var showSettingsPanel by remember { mutableStateOf(false) }
                 val leftDrawerState = rememberDrawerState(
                     initialValue = DrawerValue.Closed
                 )
@@ -59,13 +60,17 @@ class MainActivity : ComponentActivity() {
                     sunriseFile.value?.let { file ->
                         try {
                             val jsonString = file.readText()
-                            jsonObject = Json.parseToJsonElement(jsonString).jsonObject
+                            val parsedJson = Json.parseToJsonElement(jsonString).jsonObject
+                            jsonObject = parsedJson
+                            cityName = parsedJson["city"]?.jsonPrimitive?.content
                         } catch (e: Exception) {
                             e.printStackTrace()
                             jsonObject = null // handle error : toast notify
+                            cityName = null
                         }
                     } ?: run {
                         jsonObject = null // clear jsonobject if file is null
+                        cityName = null
                     }
                 }
                 // recalculate horas on user input / change
@@ -102,6 +107,7 @@ class MainActivity : ComponentActivity() {
                                 selectedDate = selectedDate,
                                 horasList = horasList,
                                 jsonObject = jsonObject,
+                                cityName = cityName,
                                 onDismissRequest = {
                                     scope.launch { leftDrawerState.close() }
                                 }
@@ -111,7 +117,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Scaffold(
                         topBar = {
-                            TopAppBar(
+                            CenterAlignedTopAppBar(
                                 title = { Text("focus") },
                                 navigationIcon = {
                                     IconButton(onClick = {

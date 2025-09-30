@@ -8,15 +8,14 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -98,13 +97,16 @@ fun uriToFile(context: Context, uri: Uri): File? {
 // display hora item
 @Composable
 fun HoraListItem(hora: Hora, mainHoraIndex: Int) {
+    var isExpanded by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxWidth()
-//            .padding(vertical = 2.dp, horizontal = 4.dp)
-    ) {
+    ) { // main hora row : clickable
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { isExpanded = !isExpanded },
+//                .padding(vertical = 6.dp, horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -123,42 +125,60 @@ fun HoraListItem(hora: Hora, mainHoraIndex: Int) {
             )
         }
         // subhoras
-        if (hora.subhoras.isNotEmpty()) {
-//            Spacer(modifier = Modifier.height(4.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp)
-            ) {
-                hora.subhoras.forEachIndexed { index, subHora ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "${String.format(Locale.ROOT, "%02d", mainHoraIndex)}.${
-                                String.format(
-                                    Locale.ROOT,
-                                    "%02d",
-                                    index + 1
-                                )
-                            } : ${subHora.start} - ${subHora.end}",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = subHora.ruler,
-                            color = horaColors[subHora.ruler] ?: defaultHoraColor
-                        )
-                    }
-//                    if (index < hora.subhoras.size - 1) {
-//                        Spacer(modifier = Modifier.height(2.dp))
-//                    }
+//        Row(verticalAlignment = Alignment.CenterVertically) {
+//            Text(
+//                text = hora.ruler,
+//                color = horaColors[hora.ruler] ?: MaterialTheme.colorScheme.onSurface,
+//                modifier = Modifier.padding(end = 4.dp)
+//            )
+//            // optional expansion indicator icon
+//            if (hora.subhoras.isNotEmpty()) {
+//                val rotationAngle by animateFloatAsState(
+//                    targetValue = if (isExpanded) 180f else 0f,
+//                    label = "arrowRotation"
+//                )
+//                Icon(
+//                    imageVector = Icons.Filled.ArrowDropDown,
+//                    contentDescription = if (isExpanded) "collapse" else "expand",
+//                    modifier = Modifier.rotate(rotationAngle)
+//                )
+//            }
+//        }
+    }
+    // animated subhoras display
+//    AnimatedVisibility(visible = isExpanded && hora.subhoras.isNotEmpty()) {
+    if (isExpanded && hora.subhoras.isNotEmpty()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp)
+        ) {
+            hora.subhoras.forEachIndexed { index, subHora ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${String.format(Locale.ROOT, "%02d", mainHoraIndex)}.${
+                            String.format(
+                                Locale.ROOT,
+                                "%02d",
+                                index + 1
+                            )
+                        } : ${subHora.start} - ${subHora.end}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = subHora.ruler,
+                        color = horaColors[subHora.ruler] ?: defaultHoraColor
+                    )
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun SettingsPanel(
@@ -167,6 +187,7 @@ fun SettingsPanel(
     selectedDate: MutableState<Calendar>,
     horasList: List<Hora>,
     jsonObject: JsonObject?,
+    cityName: String?,
     onDismissRequest: () -> Unit
 ) {
     val context = LocalContext.current
@@ -184,8 +205,8 @@ fun SettingsPanel(
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .padding(20.dp),
-        horizontalAlignment = Alignment.Start
+            .padding(10.dp)
+            .verticalScroll(rememberScrollState())
     ) {
         // selected file name
         Text("sunrise file : ${sunriseFileName.value ?: "no file selected"}")
@@ -226,17 +247,18 @@ fun SettingsPanel(
             Text("select file")
         }
         HorizontalDivider(
-            modifier = Modifier.padding(vertical = 16.dp),
+            modifier = Modifier.padding(vertical = 10.dp),
             thickness = 2.dp,
-            color = Color.LightGray //DividerDefaults.color
+            color = Color.LightGray
         )
         // selected date
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val dayOfWeekFormat = SimpleDateFormat("EEE", Locale.getDefault())
+        val formattedDayOfWeek = dayOfWeekFormat.format(selectedDate.value.time)
+        val dayOfWeek = formattedDayOfWeek.lowercase(Locale.getDefault())
         Text(
-            "selected date : ${
-                SimpleDateFormat(
-                    "yyyy-MM-dd", Locale.getDefault()
-                ).format(selectedDate.value.time)
-            }"
+            "selected date : ${dateFormat.format(selectedDate.value.time)}" +
+                    " ${dayOfWeek.format(selectedDate.value.time)}"
         )
         // date picker
         val calendar = selectedDate.value
@@ -273,30 +295,30 @@ fun SettingsPanel(
             Text("select date")
         }
         HorizontalDivider(
-            modifier = Modifier.padding(vertical = 16.dp),
+            modifier = Modifier.padding(vertical = 10.dp),
             thickness = 2.dp,
             color = Color.LightGray
         )
         // parsed file
-        Text("parsed .json : ${if (jsonObject != null) "loaded" else "not loaded"}")
-        if (horasList.isNotEmpty()) {
-            Text(
-                "first hora : ${horasList.first().start} - ${horasList.first().end}" +
-                        "  ${horasList.first().ruler}"
-            )
-        }
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 16.dp),
-            thickness = 2.dp,
-            color = Color.LightGray
-        )
+//        Text("parsed .json : ${if (jsonObject != null) "loaded" else "not loaded"}")
+//        if (horasList.isNotEmpty()) {
+//            Text(
+//                "first hora : ${horasList.first().start} - ${horasList.first().end}" +
+//                        "  ${horasList.first().ruler}"
+//            )
+//        }
+//        HorizontalDivider(
+//            modifier = Modifier.padding(vertical = 16.dp),
+//            thickness = 2.dp,
+//            color = Color.LightGray
+//        )
         // resulting hora & subhoras
-        Text("horas list")
+        Text("horas list ${cityName?.let { "for $it" } ?: ""}")
         if (horasList.isNotEmpty()) {
             LazyColumn(
                 modifier = Modifier
-                    .weight(1f)
                     .fillMaxWidth()
+                    .heightIn(max = 700.dp)
             ) {
                 itemsIndexed(
                     items = horasList,
@@ -317,14 +339,14 @@ fun SettingsPanel(
             )
         }
         HorizontalDivider(
-            modifier = Modifier.padding(vertical = 16.dp),
+            modifier = Modifier.padding(vertical = 10.dp),
             thickness = 2.dp,
             color = Color.LightGray
         )
         Button(
             onClick = onDismissRequest,
             modifier = Modifier.align(Alignment.CenterHorizontally),
-            shape = RoundedCornerShape(4.dp)
+            shape = RoundedCornerShape(4.dp),
         ) {
             Text("done")
         }
