@@ -34,11 +34,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.VerticalAlignmentLine
 import androidx.compose.ui.unit.dp
 import com.aum.aumhora.ui.theme.AumhoraTheme
 import com.aum.aumhora.ui.theme.SettingsPanel
 import com.aum.aumhora.ui.theme.defaultHoraColor
 import com.aum.aumhora.ui.theme.horaColors
+import com.aum.aumhora.ui.theme.planetaryNumbers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -96,6 +98,8 @@ class MainActivity : ComponentActivity() {
                 var currentTime by remember {
                     mutableStateOf(Calendar.getInstance())
                 }
+                // show planet number under clock
+                val showPlanetNumber = remember { mutableStateOf(false) }
                 LaunchedEffect(Unit) {
                     while (true) {
                         currentTime = Calendar.getInstance()
@@ -222,6 +226,10 @@ class MainActivity : ComponentActivity() {
                                 horasList = horasList,
                                 jsonObject = jsonObject,
                                 cityName = cityName,
+                                showPlanetNumber = showPlanetNumber.value,
+                                onShowPlanetNumberChange = {
+                                    showPlanetNumber.value = it
+                                },
                                 onDismissRequest = {
                                     scope.launch { leftDrawerState.close() }
                                 }
@@ -292,7 +300,7 @@ class MainActivity : ComponentActivity() {
                                     // todo match next subhora lord color
                                     notificationMarkerColor = nextSubHoraColor.copy(alpha = 0.9f)
                                 )
-                                // debug current hora & subhora
+                                // debug : current hora & subhora text
 //                                Spacer(Modifier.height(10.dp))
 //                                Text(
 //                                    "hora : ${currentHora?.ruler ?: "na"} (${
@@ -319,6 +327,16 @@ class MainActivity : ComponentActivity() {
 //                                        } (${it.ruler})"
 //                                    )
 //                                }
+                                // conditional display
+                                if (showPlanetNumber.value && currentSubHora != null) {
+                                    val planetNum = planetaryNumbers[currentSubHora?.ruler] ?: ""
+                                    Text(
+                                        text = planetNum,
+                                        color = subHoraLordColor.copy(alpha = 0.7f),
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
+                                }
                             }
                         }
                     )

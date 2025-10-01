@@ -188,6 +188,8 @@ fun SettingsPanel(
     horasList: List<Hora>,
     jsonObject: JsonObject?,
     cityName: String?,
+    showPlanetNumber: Boolean,
+    onShowPlanetNumberChange: (Boolean) -> Unit,
     onDismissRequest: () -> Unit
 ) {
     val context = LocalContext.current
@@ -299,7 +301,7 @@ fun SettingsPanel(
             thickness = 2.dp,
             color = Color.LightGray
         )
-        // parsed file
+        // debug : parsed file
 //        Text("parsed .json : ${if (jsonObject != null) "loaded" else "not loaded"}")
 //        if (horasList.isNotEmpty()) {
 //            Text(
@@ -307,11 +309,28 @@ fun SettingsPanel(
 //                        "  ${horasList.first().ruler}"
 //            )
 //        }
-//        HorizontalDivider(
-//            modifier = Modifier.padding(vertical = 16.dp),
-//            thickness = 2.dp,
-//            color = Color.LightGray
-//        )
+        // show planet numbers
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onShowPlanetNumberChange(!showPlanetNumber) }
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Checkbox(
+                checked = showPlanetNumber,
+                onCheckedChange = onShowPlanetNumberChange
+            )
+            Text(
+                text = "show subhora lord number",
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 16.dp),
+            thickness = 2.dp,
+            color = Color.LightGray
+        )
         // resulting hora & subhoras
         Text("horas list ${cityName?.let { "for $it" } ?: ""}")
         if (horasList.isNotEmpty()) {
