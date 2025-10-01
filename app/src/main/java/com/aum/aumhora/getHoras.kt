@@ -19,6 +19,48 @@ data class SubHora(
     val ruler: String
 )
 
+// analog clock code
+data class CalendarHora(
+    val ruler: String,
+    val startTimeCal: Calendar,
+    val endTimeCal: Calendar,
+    val processedSubHoras: List<CalendarSubHora>,
+    val originalHora: Hora
+)
+
+// parse time string to calendar
+fun parseTimeStringToCalendar(
+    timeStr: String,
+    baseDate: Calendar
+): Calendar {
+    val sdfTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+    val timeOnly = sdfTime.parse(timeStr)!!
+
+    return (baseDate.clone() as Calendar).apply {
+        set(
+            Calendar.HOUR_OF_DAY,
+            Calendar.getInstance().apply { time = timeOnly }.get(Calendar.HOUR_OF_DAY)
+        )
+        set(
+            Calendar.MINUTE,
+            Calendar.getInstance().apply { time = timeOnly }.get(Calendar.MINUTE)
+        )
+        set(
+            Calendar.SECOND,
+            Calendar.getInstance().apply { time = timeOnly }.get(Calendar.SECOND)
+        )
+        set(Calendar.MILLISECOND, 0)
+
+    }
+}
+
+data class CalendarSubHora(
+    val ruler: String,
+    val startTimeCal: Calendar,
+    val endTimeCal: Calendar,
+    val originalSubHora: SubHora
+)
+
 fun generateSubhoras(
     hora: Hora,
     sdf: SimpleDateFormat,
